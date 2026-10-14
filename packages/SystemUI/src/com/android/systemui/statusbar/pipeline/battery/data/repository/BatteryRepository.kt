@@ -21,6 +21,7 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.os.UserHandle
+import android.provider.Settings
 import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.dagger.qualifiers.Application
 import com.android.systemui.dagger.qualifiers.Background
@@ -319,6 +320,7 @@ constructor(
                         LineageSettings.System.getUriFor(
                             LineageSettings.System.STATUS_BAR_SHOW_BATTERY_PERCENT
                         ),
+                        Settings.System.getUriFor(Settings.System.SHOW_BATTERY_PERCENT),
                     )
 
                 fun readMode(): Int {
@@ -332,12 +334,30 @@ constructor(
                     return if (iconStyle == BatteryRepository.ICON_STYLE_TEXT) {
                         BatteryRepository.SHOW_PERCENT_NEXT_TO
                     } else {
-                        LineageSettings.System.getIntForUser(
-                            resolver,
-                            LineageSettings.System.STATUS_BAR_SHOW_BATTERY_PERCENT,
-                            BatteryRepository.SHOW_PERCENT_HIDDEN,
-                            UserHandle.USER_CURRENT,
-                        )
+                        val lineageMode =
+                            LineageSettings.System.getIntForUser(
+                                resolver,
+                                LineageSettings.System.STATUS_BAR_SHOW_BATTERY_PERCENT,
+                                -1,
+                                UserHandle.USER_CURRENT,
+                            )
+                        if (lineageMode >= 0) {
+                            lineageMode
+                        } else if (
+                            // Not set through Lineage's settings: follow the AOSP battery
+                            // percentage toggle (Settings > Battery), which shows the
+                            // percentage inside the icon as on stock Android.
+                            Settings.System.getIntForUser(
+                                resolver,
+                                Settings.System.SHOW_BATTERY_PERCENT,
+                                0,
+                                UserHandle.USER_CURRENT,
+                            ) != 0
+                        ) {
+                            BatteryRepository.SHOW_PERCENT_INSIDE
+                        } else {
+                            BatteryRepository.SHOW_PERCENT_HIDDEN
+                        }
                     }
                 }
 
