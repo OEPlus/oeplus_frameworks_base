@@ -338,15 +338,15 @@ constructor(
                             LineageSettings.System.getIntForUser(
                                 resolver,
                                 LineageSettings.System.STATUS_BAR_SHOW_BATTERY_PERCENT,
-                                -1,
+                                BatteryRepository.SHOW_PERCENT_HIDDEN,
                                 UserHandle.USER_CURRENT,
                             )
-                        if (lineageMode >= 0) {
+                        if (lineageMode != BatteryRepository.SHOW_PERCENT_HIDDEN) {
                             lineageMode
                         } else if (
-                            // Not set through Lineage's settings: follow the AOSP battery
-                            // percentage toggle (Settings > Battery), which shows the
-                            // percentage inside the icon as on stock Android.
+                            // Hidden in Lineage's settings (its default): follow the AOSP
+                            // battery percentage toggle (Settings > Battery), which shows
+                            // the percentage inside the icon as on stock Android.
                             Settings.System.getIntForUser(
                                 resolver,
                                 Settings.System.SHOW_BATTERY_PERCENT,
