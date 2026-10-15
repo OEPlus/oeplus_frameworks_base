@@ -164,7 +164,7 @@ public final class CertificateHacker {
         }
     }
 
-    private static ContentSigner createBCSigner(String algorithm, PrivateKey privateKey) throws Exception {
+    static ContentSigner createBCSigner(String algorithm, PrivateKey privateKey) throws Exception {
         AlgorithmIdentifier sigAlgId = new DefaultSignatureAlgorithmIdentifierFinder().find(algorithm);
         
         if (privateKey instanceof BCECPrivateKey) {
