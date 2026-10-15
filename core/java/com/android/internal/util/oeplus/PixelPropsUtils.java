@@ -72,6 +72,11 @@ public final class PixelPropsUtils {
 
     private static final String PI_PP_TARGETS_KEY = "pi_pp_targets";
     private static final String PI_PP_MODEL_KEY   = "pi_pp_model";
+    // Runtime toggle: when 1, run the feature spoof even on a genuine mainline
+    // Pixel (which is otherwise skipped). 0 (default) keeps the stock behavior of
+    // leaving real Pixels untouched. Settable with `settings put secure
+    // pi_pp_spoof_mainline 1`; takes effect for app processes started afterwards.
+    private static final String PI_PP_SPOOF_MAINLINE_KEY = "pi_pp_spoof_mainline";
 
     private static final String TAG = PixelPropsUtils.class.getSimpleName();
     private static final boolean DEBUG = false;
@@ -104,9 +109,11 @@ public final class PixelPropsUtils {
     private static final Pattern TENSOR_PIXEL_PATTERN =
             Pattern.compile("^Pixel (([6-9]|[1-9][0-9])[a-zA-Z ]*)$");
 
-    // Mainline (first-party SoC) devices: Pixel 8 and above
+    // Mainline (first-party SoC) devices: Pixel 8 and above. The suffix class
+    // includes a space so "Pro"/"Pro XL"/"Pro Fold" variants (e.g. "Pixel 10 Pro")
+    // are matched, not just letter-adjacent ones like "8a".
     private static final Pattern MAINLINE_PIXEL_PATTERN =
-            Pattern.compile("^Pixel (([89]|[1-9][0-9])([a-zA-Z].*)?)$");
+            Pattern.compile("^Pixel (([89]|[1-9][0-9])([a-zA-Z ].*)?)$");
 
     // Any supported Pixel: Pixel 3 and above (covers full GMS support window + current)
     private static final Pattern SUPPORTED_PIXEL_PATTERN =
@@ -129,6 +136,8 @@ public final class PixelPropsUtils {
     private static volatile boolean sPhotosSpoofEnabled = true;
     private static volatile boolean sSnapchatSpoofEnabled = false;
     private static volatile boolean sPixelPropsSpoofEnabled = true;
+    // When true, the feature spoof also runs on a genuine mainline Pixel.
+    private static volatile boolean sSpoofMainlineEnabled = false;
     private static volatile boolean sInitialized = false;
     private static volatile Set<String> sPpTargets = null;
     private static volatile String sPpModel = null;
@@ -199,6 +208,8 @@ public final class PixelPropsUtils {
                         ? new ArraySet<>(PixelDeviceRepository.DEFAULT_PP_TARGETS)
                         : new ArraySet<>(Arrays.asList(rawTargets.split(",")));
                 sPpModel = Settings.Secure.getString(cr, PI_PP_MODEL_KEY);
+                sSpoofMainlineEnabled = Settings.Secure.getInt(
+                        cr, PI_PP_SPOOF_MAINLINE_KEY, 0) == 1;
             } catch (Throwable t) {
                 // Settings provider not ready yet; cache stays at safe defaults
             }
@@ -219,6 +230,8 @@ public final class PixelPropsUtils {
                     Settings.Secure.getUriFor(PI_PP_TARGETS_KEY), false, observer);
             cr.registerContentObserver(
                     Settings.Secure.getUriFor(PI_PP_MODEL_KEY), false, observer);
+            cr.registerContentObserver(
+                    Settings.Secure.getUriFor(PI_PP_SPOOF_MAINLINE_KEY), false, observer);
         } catch (Throwable t) {
             // Observer registration failed; cached defaults remain
         }
@@ -288,7 +301,7 @@ public final class PixelPropsUtils {
 
         if (!sIsExcluded
                 && ppTargets.contains(packageName)
-                && !sIsMainlineDevice
+                && (!sIsMainlineDevice || sSpoofMainlineEnabled)
                 && sPixelPropsSpoofEnabled) {
 
             // Resolve model profile from cache, falling back to hardcoded defaults
