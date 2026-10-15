@@ -28,6 +28,7 @@ import android.database.ContentObserver;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.security.pif.PlayIntegritySpoofService;
@@ -93,8 +94,6 @@ public class AxSpoofManager implements IAxSpoofManager {
 
     private static final String KEYBOX_SOURCE_KEY = "spoof_trickystore_keybox_source";
     private static final String KEYBOX_SOURCE_USER = "user";
-    private static final String OFFICIAL_KEYBOX_URL =
-            "https://git.evolution-x.org/EvoX/keybox/raw/branch/main/keybox.xml";
 
     private static final String VENDING_PACKAGE = "com.android.vending";
     private static final String[] GMS_FAMILY = {
@@ -583,14 +582,23 @@ public class AxSpoofManager implements IAxSpoofManager {
             return;
         }
 
+        // OEPlus: no keybox URL is shipped. The operator points this at their OWN
+        // keybox server via the persist.sys.oeplus.keybox_url property (set in a
+        // product makefile, or at runtime by a privileged tool). Empty => no fetch,
+        // and the keybox then comes only from whatever is written directly to
+        // SPOOF_TRICKYSTORE_KEYBOX. Never a shared or third-party source.
+        final String keyboxUrl =
+                SystemProperties.get("persist.sys.oeplus.keybox_url", "").trim();
+        if (keyboxUrl.isEmpty()) return;
+
         String source = Settings.Secure.getStringForUser(
                 mResolver, KEYBOX_SOURCE_KEY, UserHandle.USER_SYSTEM);
         if (KEYBOX_SOURCE_USER.equals(source)) {
-            return; // user manages their own keybox — never overwrite it
+            return; // user writes the keybox directly — never overwrite it
         }
 
         String xml = runBounded(mNetworkExecutor, () -> {
-            HttpURLConnection conn = (HttpURLConnection) new URL(OFFICIAL_KEYBOX_URL).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URL(keyboxUrl).openConnection();
             conn.setConnectTimeout(10_000);
             conn.setReadTimeout(10_000);
             if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) return null;
@@ -600,12 +608,12 @@ public class AxSpoofManager implements IAxSpoofManager {
         if (!looksLikeKeybox(xml)) {
             // A captive portal or error page can come back as a 200; never let
             // that replace a working keybox.
-            Log.w(TAG, "Keybox mirror returned something that is not a keybox, keeping the current one");
+            Log.w(TAG, "Configured keybox URL returned something that is not a keybox, keeping the current one");
             return;
         }
 
-        // The stored value is Base64 (that's how Evolver writes it) while the
-        // download is raw XML, so compare decoded XML with decoded XML.
+        // The stored value is Base64 while the download is raw XML, so compare
+        // decoded XML with decoded XML.
         String currentXml = decodeKeyboxXml(getCached(Settings.Secure.SPOOF_TRICKYSTORE_KEYBOX));
         if (currentXml != null && sha256(currentXml).equals(sha256(xml))) {
             return; // unchanged
@@ -616,7 +624,7 @@ public class AxSpoofManager implements IAxSpoofManager {
                 mResolver, Settings.Secure.SPOOF_TRICKYSTORE_KEYBOX, encoded, UserHandle.USER_SYSTEM);
 
         killGmsFamily();
-        Log.i(TAG, "Auto-refreshed official keybox");
+        Log.i(TAG, "Refreshed keybox from configured URL");
     }
 
     /** Keybox XML from a stored value that is either raw XML or Base64 of it; null if neither. */
