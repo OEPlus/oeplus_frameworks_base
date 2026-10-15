@@ -628,6 +628,9 @@ public class TrickyStoreService {
 
     public boolean needHack(int callingUid, String[] packages) {
         if (packages == null) return false;
+        // No keybox => do nothing, so a missing/unfetched keybox can never make
+        // keystore worse than stock (and we skip the costly TEE probe below).
+        if (!hasKeyboxes()) return false;
         maybeRefreshTargets();
         for (String pkg : packages) {
             if (XPOSED_PACKAGES.contains(pkg)) continue;
@@ -643,6 +646,9 @@ public class TrickyStoreService {
 
     public boolean needGenerate(int callingUid, String[] packages) {
         if (packages == null) return false;
+        // No keybox => fall through to normal keystore key generation instead of
+        // failing in CertificateGenerator ("No keybox found").
+        if (!hasKeyboxes()) return false;
         maybeRefreshTargets();
         for (String pkg : packages) {
             if (XPOSED_PACKAGES.contains(pkg)) continue;
