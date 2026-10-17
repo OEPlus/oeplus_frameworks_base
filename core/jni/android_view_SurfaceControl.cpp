@@ -2300,6 +2300,10 @@ static jlong nativeMirrorSurfaceWithCrop(JNIEnv* env, jclass clazz, jlong mirror
     return reinterpret_cast<jlong>(surface.get());
 }
 
+static void nativeSetGlassLight(JNIEnv* env, jclass clazz, jboolean active, jfloat x, jfloat y) {
+    SurfaceComposerClient::setGlassLight(active, x, y);
+}
+
 static void nativeSetGlobalShadowSettings(JNIEnv* env, jclass clazz, jfloatArray jAmbientColor,
         jfloatArray jSpotColor, jfloat lightPosY, jfloat lightPosZ, jfloat lightRadius) {
     sp<SurfaceComposerClient> client = SurfaceComposerClient::getDefault();
@@ -3009,6 +3013,7 @@ static const JNINativeMethod sSurfaceControlMethods[] = {
             (void*)nativeMirrorSurface },
     {"nativeMirrorSurfaceWithCrop", "(JJJ)J",
             (void*)nativeMirrorSurfaceWithCrop },
+    {"nativeSetGlassLight", "(ZFF)V", (void*)nativeSetGlassLight },
     {"nativeSetGlobalShadowSettings", "([F[FFFF)V",
             (void*)nativeSetGlobalShadowSettings },
     {"nativeGetDisplayDecorationSupport",

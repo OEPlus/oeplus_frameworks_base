@@ -293,6 +293,7 @@ public final class SurfaceControl implements Parcelable {
     private static native void nativeSetBorderSettings(long transactionObj, long nativeObject,
             Parcel settings);
 
+    private static native void nativeSetGlassLight(boolean active, float x, float y);
     private static native void nativeSetGlobalShadowSettings(@Size(4) float[] ambientColor,
             @Size(4) float[] spotColor, float lightPosY, float lightPosZ, float lightRadius);
     private static native DisplayDecorationSupport nativeGetDisplayDecorationSupport(
@@ -3171,6 +3172,18 @@ public final class SurfaceControl implements Parcelable {
         validateColorArg(ambientColor);
         validateColorArg(spotColor);
         nativeSetGlobalShadowSettings(ambientColor, spotColor, lightPosY, lightPosZ, lightRadius);
+    }
+
+    /**
+     * OEPlus glass material: sets the direction the light comes from, in display space (x/y of a
+     * vector pointing towards the light), while active, e.g. while the shade follows the device
+     * tilt. Inactive returns to the default light from the top left. Requires the
+     * ACCESS_SURFACE_FLINGER permission.
+     *
+     * @hide
+     */
+    public static void setGlassLight(boolean active, float x, float y) {
+        nativeSetGlassLight(active, x, y);
     }
 
     /**
