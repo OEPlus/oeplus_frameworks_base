@@ -5062,4 +5062,11 @@
     <!-- Accessibility label for the thumbs down button on attribution dialog. [CHAR_LIMIT=NONE] -->
     <string name="ace_attribution_thumbs_down_button_accessibility_description">Thumbs down feedback button</string>
 
+
+    <!-- OEPlus glass theme, Control Center layout: media module when nothing is playing [CHAR LIMIT=30] -->
+    <string name="oeplus_cc_not_playing">Not Playing</string>
+    <!-- OEPlus glass theme, Control Center layout: vertical brightness slider [CHAR LIMIT=NONE] -->
+    <string name="oeplus_cc_brightness">Brightness</string>
+    <!-- OEPlus glass theme, Control Center layout: vertical media volume slider [CHAR LIMIT=NONE] -->
+    <string name="oeplus_cc_volume">Media volume</string>
 </resources>

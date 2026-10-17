@@ -112,6 +112,7 @@ import com.android.compose.modifiers.height
 import com.android.compose.modifiers.padding
 import com.android.compose.modifiers.thenIf
 import com.android.compose.theme.PlatformTheme
+import com.android.settingslib.volume.data.repository.AudioRepository
 import com.android.systemui.Dumpable
 import com.android.systemui.Flags
 import com.android.systemui.Flags.notificationShadeBlur
@@ -153,8 +154,10 @@ import com.android.systemui.qs.shared.ui.QuickSettings.Elements
 import com.android.systemui.qs.ui.composable.QuickSettingsShade
 import com.android.systemui.qs.ui.composable.QuickSettingsShade.systemGestureExclusionInShade
 import com.android.systemui.qs.ui.composable.QuickSettingsTheme
+import com.android.systemui.qs.ui.compose.oeplus.ControlCenterLayout
 import com.android.systemui.res.R
 import com.android.systemui.shade.ShadeDisplayAware
+import com.android.systemui.shared.system.BlurUtils
 import com.android.systemui.statusbar.policy.ConfigurationController
 import com.android.systemui.statusbar.policy.ConfigurationController.ConfigurationListener
 import com.android.systemui.util.LifecycleFragment
@@ -162,6 +165,7 @@ import com.android.systemui.util.asIndenting
 import com.android.systemui.util.kotlin.pairwise
 import com.android.systemui.util.printSection
 import com.android.systemui.util.println
+import dagger.Lazy
 import java.io.PrintWriter
 import java.util.function.Consumer
 import javax.inject.Inject
@@ -186,6 +190,7 @@ constructor(
     private val dumpManager: DumpManager,
     @Background private val backgroundDispatcher: CoroutineDispatcher,
     @ShadeDisplayAware private val configurationController: ConfigurationController,
+    private val audioRepository: Lazy<AudioRepository>,
 ) : LifecycleFragment(), QS, Dumpable {
 
     private val scrollListener = MutableStateFlow<QS.ScrollListener?>(null)
@@ -901,17 +906,33 @@ constructor(
                                         end = qsHorizontalMargin(),
                                     )
                         ) {
-                            QuickSettingsLayout(
-                                brightness =
-                                    if (viewModel.isBrightnessSliderVisible) {
-                                        BrightnessSlider
-                                    } else {
-                                        {}
-                                    },
-                                tiles = TileGrid,
-                                media = Media,
-                                mediaInRow = viewModel.qsMediaInRow,
-                            )
+                            if (BlurUtils.isOEPlusGlassEnabled()) {
+                                // OEPlus glass theme: laid out like iOS Control Center.
+                                ControlCenterLayout(
+                                    brightnessViewModel =
+                                        if (viewModel.isBrightnessSliderVisible) {
+                                            containerViewModel.brightnessSliderViewModel
+                                        } else {
+                                            null
+                                        },
+                                    audioRepository = audioRepository.get(),
+                                    mediaVisible = viewModel.qsMediaVisible,
+                                    media = Media,
+                                    tiles = TileGrid,
+                                )
+                            } else {
+                                QuickSettingsLayout(
+                                    brightness =
+                                        if (viewModel.isBrightnessSliderVisible) {
+                                            BrightnessSlider
+                                        } else {
+                                            {}
+                                        },
+                                    tiles = TileGrid,
+                                    media = Media,
+                                    mediaInRow = viewModel.qsMediaInRow,
+                                )
+                            }
                         }
                     }
                 }
