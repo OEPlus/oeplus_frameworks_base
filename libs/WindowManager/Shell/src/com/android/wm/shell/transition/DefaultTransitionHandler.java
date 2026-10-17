@@ -520,7 +520,8 @@ public class DefaultTransitionHandler implements Transitions.TransitionHandler {
             if (!TransitionInfo.isIndependent(change, info)) continue;
 
             final int type = getTransitionTypeFromInfo(info);
-            Animation a = loadAnimation(type, info, change, wallpaperTransit, isDreamTransition);
+            Animation a = OEPlusMotionLab.apply(
+                    loadAnimation(type, info, change, wallpaperTransit, isDreamTransition));
             if (a != null) {
                 final int displayId = isTask ? change.getTaskInfo().displayId
                         : info.getRoot(TransitionUtil.rootIndexFor(change, info))
