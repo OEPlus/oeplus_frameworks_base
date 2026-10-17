@@ -38,6 +38,7 @@ import android.graphics.BlendMode;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Outline;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Animatable;
@@ -59,6 +60,7 @@ import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.animation.Interpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -81,6 +83,7 @@ import com.android.systemui.Flags;
 import com.android.systemui.animation.ActivityTransitionAnimator;
 import com.android.systemui.animation.GhostedViewTransitionAnimatorController;
 import com.android.systemui.broadcast.BroadcastSender;
+import com.android.systemui.common.ui.view.OEPlusGlassViews;
 import com.android.systemui.communal.domain.interactor.CommunalSceneInteractor;
 import com.android.systemui.communal.widgets.CommunalTransitionAnimatorController;
 import com.android.systemui.dagger.qualifiers.Background;
@@ -109,6 +112,7 @@ import com.android.systemui.plugins.FalsingManager;
 import com.android.systemui.res.R;
 import com.android.systemui.scene.shared.flag.SceneContainerFlag;
 import com.android.systemui.shade.ShadeDisplayAware;
+import com.android.systemui.shared.system.BlurUtils;
 import com.android.systemui.statusbar.NotificationLockscreenUserManager;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.surfaceeffects.core.ripple.RippleAnimationConfig;
@@ -449,6 +453,23 @@ public class MediaControlPanel {
         // AlbumView uses a hardware layer so that clipping of the foreground is handled
         // with clipping the album art. Otherwise album art shows through at the edges.
         mMediaViewHolder.getAlbumView().setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+        // OEPlus glass theme: the card is glass, and the artwork shows as a small rounded tile
+        // in place of the app icon, like iOS. The album view uses a hardware layer, so the glass
+        // goes on the player itself.
+        if (BlurUtils.isOEPlusGlassEnabled()) {
+            OEPlusGlassViews.attach(player,
+                    mContext.getResources().getDimension(R.dimen.notification_corner_radius));
+            ImageView tile = vh.getAppIcon();
+            tile.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(),
+                            Math.min(view.getWidth(), view.getHeight()) * 0.22f);
+                }
+            });
+            tile.setClipToOutline(true);
+        }
 
         TextView titleText = mMediaViewHolder.getTitleText();
         TextView artistText = mMediaViewHolder.getArtistText();
@@ -923,7 +944,13 @@ public class MediaControlPanel {
                 // Bind the album view to the artwork or a transition drawable
                 ImageView albumView = mMediaViewHolder.getAlbumView();
                 albumView.setPadding(0, 0, 0, 0);
-                if (updateBackground || colorSchemeChanged
+                final boolean glass = BlurUtils.isOEPlusGlassEnabled();
+                if (glass) {
+                    // OEPlus glass theme: no artwork behind the controls; it shows as the tile.
+                    albumView.setImageDrawable(null);
+                    mPrevArtwork = null;
+                    mIsArtworkBound = isArtworkBound;
+                } else if (updateBackground || colorSchemeChanged
                         || (!mIsArtworkBound && isArtworkBound)) {
                     if (mPrevArtwork == null) {
                         albumView.setImageDrawable(artwork);
@@ -951,7 +978,9 @@ public class MediaControlPanel {
                 // App icon - use notification icon
                 ImageView appIconView = mMediaViewHolder.getAppIcon();
                 appIconView.clearColorFilter();
-                if (data.getAppIcon() != null && !data.getResumption()) {
+                if (glass && isArtworkBound) {
+                    appIconView.setImageIcon(artworkIcon);
+                } else if (data.getAppIcon() != null && !data.getResumption()) {
                     appIconView.setImageIcon(data.getAppIcon());
                     appIconView.setColorFilter(mColorSchemeTransition.getAppIconColor());
                 } else {

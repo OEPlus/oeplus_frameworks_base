@@ -25,12 +25,17 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import com.android.internal.R
 import com.android.internal.annotations.VisibleForTesting
+import com.android.internal.graphics.ColorUtils
 import com.android.systemui.Flags.enableSuggestedDeviceUi
 import com.android.systemui.media.controls.ui.view.MediaViewHolder
 import com.android.systemui.monet.ColorScheme
+import com.android.systemui.shared.system.BlurUtils
 import com.android.systemui.surfaceeffects.view.loadingeffect.LoadingEffect
 import com.android.systemui.surfaceeffects.view.ripple.MultiRippleController
 import com.android.systemui.surfaceeffects.view.turbulencenoise.TurbulenceNoiseController
+
+// OEPlus glass theme: alpha of the artwork colour over the glass media card.
+private const val GLASS_TINT_ALPHA = 0x40
 
 /**
  * A [ColorTransition] is an object that updates the colors of views each time [updateColorScheme]
@@ -134,7 +139,14 @@ internal constructor(
 
     private val backgroundColor: AnimatingColorTransition by lazy {
         animatingColorTransitionFactory(backgroundDefault, ::backgroundFromScheme) { color ->
-            mediaViewHolder.albumView.backgroundTintList = ColorStateList.valueOf(color)
+            // OEPlus glass theme: only a hint of the artwork colour over the glass.
+            val tint =
+                if (BlurUtils.isOEPlusGlassEnabled()) {
+                    ColorUtils.setAlphaComponent(color, GLASS_TINT_ALPHA)
+                } else {
+                    color
+                }
+            mediaViewHolder.albumView.backgroundTintList = ColorStateList.valueOf(tint)
         }
     }
 
