@@ -48,6 +48,11 @@ internal abstract class StartShadeModule {
 
     @Binds
     @IntoMap
+    @ClassKey(GlassLightController::class)
+    abstract fun bindGlassLightController(controller: GlassLightController): CoreStartable
+
+    @Binds
+    @IntoMap
     @ClassKey(ShadeInstantExpansionCommands::class)
     abstract fun bindShadeInstantExpansionCommands(
         startable: ShadeInstantExpansionCommands
