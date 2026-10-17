@@ -253,6 +253,7 @@ import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.FastMath;
 import com.android.internal.util.Preconditions;
+import com.android.internal.util.android.FontController;
 import com.android.text.flags.Flags;
 
 import libcore.util.EmptyArray;
@@ -4683,9 +4684,18 @@ public class TextView extends View implements ViewTreeObserver.OnPreDrawListener
             }
         }
 
-        if (!TextUtils.equals(mLastResolvedSystemFont, Typeface.getFontName())) {
+        if (FontController.isActive()
+                && !TextUtils.equals(mLastResolvedSystemFont, Typeface.getFontName())) {
             if (mFontFamily != null) {
-                setTypeface(Typeface.getOverrideTypeface(mFontFamily));
+                // Only swap the family: keep the view's own weight and italic.
+                final Typeface original =
+                        mOriginalTypeface != null ? mOriginalTypeface : getTypeface();
+                Typeface override = Typeface.getOverrideTypeface(mFontFamily);
+                if (original != null) {
+                    override = Typeface.create(override, original.getWeight(),
+                            original.isItalic());
+                }
+                setTypeface(override);
             }
             mLastResolvedSystemFont = Typeface.getFontName();
         }
