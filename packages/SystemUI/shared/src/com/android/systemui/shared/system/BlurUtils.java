@@ -19,6 +19,8 @@ package com.android.systemui.shared.system;
 import static android.view.CrossWindowBlurListeners.CROSS_WINDOW_BLUR_SUPPORTED;
 
 import static com.android.systemui.Flags.blurOnMoreSurfaces;
+import static com.android.systemui.Flags.enableLockscreenBlur;
+import static com.android.systemui.Flags.lockscreenBlurForNotifications;
 
 import android.app.ActivityManager;
 import android.content.res.Resources;
@@ -37,7 +39,30 @@ public abstract class BlurUtils {
     }
 
     public static boolean isVolumeAndPowerBlurEnabled() {
-        return blurOnMoreSurfaces() && isBlurExpansionEnabledOnDevice();
+        return (blurOnMoreSurfaces() || isOEPlusGlassEnabled()) && isBlurExpansionEnabledOnDevice();
+    }
+
+    /** Blur on lock screen surfaces (shortcuts, device entry icon), or the OEPlus glass theme. */
+    public static boolean isLockscreenBlurEnabled() {
+        return enableLockscreenBlur() || isOEPlusGlassEnabled();
+    }
+
+    /** Blurred notification backgrounds (shade and lock screen), or the OEPlus glass theme. */
+    public static boolean isNotificationBlurEnabled() {
+        return lockscreenBlurForNotifications() || isOEPlusGlassEnabled();
+    }
+
+    /**
+     * OEPlus glass theme: SystemUI surfaces get their own blur regions, which SurfaceFlinger draws
+     * as glass. Read once per process; Settings restarts SystemUI when the theme switch changes.
+     */
+    public static boolean isOEPlusGlassEnabled() {
+        return OEPlusGlass.ENABLED;
+    }
+
+    private static final class OEPlusGlass {
+        static final boolean ENABLED =
+                SystemProperties.getBoolean("persist.sys.oeplus.theme.glass", false);
     }
 
     private static boolean isBlurExpansionEnabledOnDevice() {

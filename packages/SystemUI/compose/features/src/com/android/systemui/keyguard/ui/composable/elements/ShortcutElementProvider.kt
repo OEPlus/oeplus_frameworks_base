@@ -71,7 +71,6 @@ import com.android.compose.animation.scene.ElementKey
 import com.android.compose.theme.LocalAndroidColorScheme
 import com.android.compose.ui.graphics.painter.rememberDrawablePainter
 import com.android.keyguard.logging.KeyguardQuickAffordancesLogger
-import com.android.systemui.Flags.enableLockscreenBlur
 import com.android.systemui.animation.Expandable
 import com.android.systemui.common.shared.model.ContentDescription.Companion.loadContentDescription
 import com.android.systemui.common.shared.model.Icon as SysUiIcon
@@ -88,6 +87,7 @@ import com.android.systemui.plugins.keyguard.ui.composable.elements.LockscreenEl
 import com.android.systemui.plugins.keyguard.ui.composable.elements.LockscreenScope
 import com.android.systemui.res.R
 import com.android.systemui.shade.ShadeDisplayAware
+import com.android.systemui.shared.system.BlurUtils.isLockscreenBlurEnabled
 import com.android.systemui.statusbar.KeyguardIndicationController
 import com.android.systemui.statusbar.VibratorHelper
 import com.android.systemui.window.domain.interactor.WindowRootViewBlurInteractor
@@ -289,7 +289,7 @@ constructor(
         viewModel: KeyguardQuickAffordanceViewModel,
         alpha: Float,
     ): Modifier {
-        if (enableLockscreenBlur()) {
+        if (isLockscreenBlurEnabled()) {
             val viewRootImpl = LocalView.current.viewRootImpl
             val drawable = remember {
                 viewRootImpl.createBackgroundBlurDrawable().apply { setBlurRadius(0) }
@@ -334,7 +334,7 @@ constructor(
                 color =
                     if (viewModel.isActivated) {
                         MaterialTheme.colorScheme.primaryFixed
-                    } else if (enableLockscreenBlur() && isBlurSupported) {
+                    } else if (isLockscreenBlurEnabled() && isBlurSupported) {
                         LocalAndroidColorScheme.current.surfaceEffect1
                     } else {
                         MaterialTheme.colorScheme.surfaceContainerHigh

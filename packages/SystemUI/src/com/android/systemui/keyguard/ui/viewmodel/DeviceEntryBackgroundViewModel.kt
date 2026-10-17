@@ -19,7 +19,6 @@ package com.android.systemui.keyguard.ui.viewmodel
 
 import android.content.Context
 import com.android.settingslib.Utils
-import com.android.systemui.Flags.enableLockscreenBlur
 import com.android.systemui.common.shared.colors.SurfaceEffectColors
 import com.android.systemui.common.ui.domain.interactor.ConfigurationInteractor
 import com.android.systemui.dagger.SysUISingleton
@@ -29,6 +28,7 @@ import com.android.systemui.scene.domain.interactor.SceneInteractor
 import com.android.systemui.scene.shared.flag.SceneContainerFlag
 import com.android.systemui.scene.shared.model.Scenes
 import com.android.systemui.shade.ShadeDisplayAware
+import com.android.systemui.shared.system.BlurUtils.isLockscreenBlurEnabled
 import com.android.systemui.window.domain.interactor.WindowRootViewBlurInteractor
 import dagger.Lazy
 import javax.inject.Inject
@@ -79,7 +79,7 @@ constructor(
     val color: Flow<Int> =
         deviceEntryIconViewModel.useBackgroundProtection.flatMapLatest { useBackground ->
             if (useBackground) {
-                if (!enableLockscreenBlur()) {
+                if (!isLockscreenBlurEnabled()) {
                     configurationInteractor.onAnyConfigurationChange
                         .map {
                             Utils.getColorAttrDefaultColor(

@@ -32,7 +32,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.android.app.tracing.coroutines.launchTraced as launch
 import com.android.internal.graphics.drawable.BackgroundBlurDrawable
 import com.android.systemui.Flags
-import com.android.systemui.Flags.enableLockscreenBlur
 import com.android.systemui.common.ui.view.TouchHandlingView
 import com.android.systemui.keyguard.ui.view.DeviceEntryIconView
 import com.android.systemui.keyguard.ui.viewmodel.DeviceEntryBackgroundViewModel
@@ -41,6 +40,7 @@ import com.android.systemui.keyguard.ui.viewmodel.DeviceEntryIconViewModel
 import com.android.systemui.lifecycle.repeatWhenAttached
 import com.android.systemui.plugins.FalsingManager
 import com.android.systemui.res.R
+import com.android.systemui.shared.system.BlurUtils.isLockscreenBlurEnabled
 import com.android.systemui.statusbar.VibratorHelper
 import com.android.systemui.util.kotlin.DisposableHandles
 import com.android.systemui.window.domain.interactor.WindowRootViewBlurInteractor
@@ -277,7 +277,7 @@ object DeviceEntryIconViewBinder {
         disposables +=
             bgView.repeatWhenAttached(mainImmediateDispatcher) {
                 repeatOnLifecycle(Lifecycle.State.CREATED) {
-                    if (enableLockscreenBlur()) {
+                    if (isLockscreenBlurEnabled()) {
                         bgView.background =
                             bgView.viewRootImpl.createBackgroundBlurDrawable().apply {
                                 setBlurRadius(
@@ -303,7 +303,7 @@ object DeviceEntryIconViewBinder {
                     launch("$TAG#bgViewModel.alpha") {
                         bgViewModel.alpha.collect { alpha ->
                             bgView.alpha = alpha
-                            if (enableLockscreenBlur()) {
+                            if (isLockscreenBlurEnabled()) {
                                 bgView.background?.alpha = (255 * alpha).toInt()
                             }
                         }

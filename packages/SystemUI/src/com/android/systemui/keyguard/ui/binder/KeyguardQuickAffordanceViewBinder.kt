@@ -35,7 +35,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.android.app.tracing.coroutines.launchTraced as launch
 import com.android.internal.graphics.drawable.BackgroundBlurDrawable
 import com.android.keyguard.logging.KeyguardQuickAffordancesLogger
-import com.android.systemui.Flags.enableLockscreenBlur
 import com.android.systemui.animation.Expandable
 import com.android.systemui.animation.view.LaunchableImageView
 import com.android.systemui.common.shared.model.Icon
@@ -47,6 +46,7 @@ import com.android.systemui.keyguard.ui.viewmodel.KeyguardQuickAffordanceViewMod
 import com.android.systemui.lifecycle.repeatWhenAttached
 import com.android.systemui.plugins.FalsingManager
 import com.android.systemui.res.R
+import com.android.systemui.shared.system.BlurUtils.isLockscreenBlurEnabled
 import com.android.systemui.statusbar.VibratorHelper
 import com.android.systemui.util.doOnEnd
 import com.android.systemui.window.domain.interactor.WindowRootViewBlurInteractor
@@ -101,7 +101,7 @@ constructor(
 
         val disposableHandle =
             view.repeatWhenAttached {
-                if (enableLockscreenBlur() && view.background !is LayerDrawable) {
+                if (isLockscreenBlurEnabled() && view.background !is LayerDrawable) {
                     val blurDrawable =
                         view.viewRootImpl.createBackgroundBlurDrawable().apply {
                             setCornerRadius(cornerRadius)
@@ -136,7 +136,7 @@ constructor(
                         }
                     }
 
-                    if (enableLockscreenBlur()) {
+                    if (isLockscreenBlurEnabled()) {
                         launch {
                             combine(
                                 windowRootViewBlurInteractor.isBlurCurrentlySupported,
@@ -167,7 +167,7 @@ constructor(
         view: View,
         isBlurSupported: Boolean,
     ) {
-        if (enableLockscreenBlur() && view.background is LayerDrawable) {
+        if (isLockscreenBlurEnabled() && view.background is LayerDrawable) {
             val blurDrawable =
                 (view.background as LayerDrawable).getDrawable(0) as BackgroundBlurDrawable
             blurDrawable.setVisible(
@@ -304,7 +304,7 @@ constructor(
                 if (isDimmed) DIM_ALPHA else alpha
             }
             .collect {
-                if (enableLockscreenBlur() && view.background is LayerDrawable) {
+                if (isLockscreenBlurEnabled() && view.background is LayerDrawable) {
                     (view.background as LayerDrawable).getDrawable(0).alpha = (it * 255).toInt()
                 }
                 view.alpha = it
@@ -321,7 +321,7 @@ constructor(
                 view.context.getColor(
                     if (viewModel.isActivated) {
                         com.android.internal.R.color.materialColorPrimaryFixed
-                    } else if (enableLockscreenBlur() && isBlurSupported) {
+                    } else if (isLockscreenBlurEnabled() && isBlurSupported) {
                         com.android.internal.R.color.customColorSurfaceEffect1
                     } else {
                         com.android.internal.R.color.materialColorSurfaceContainerHigh
