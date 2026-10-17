@@ -40,6 +40,11 @@ public class FontController {
 
     private volatile String sFontFamily = "sans-serif";
 
+    // OEPlus: the engine stays out of the way (stock font behavior) until the user picks a
+    // non-stock font, which sets this property. Cached; refreshed on configuration changes.
+    private static final String PROP_FONT_OVERRIDE = "persist.sys.oeplus.theme.font_override";
+    private volatile boolean mActive = SystemProperties.getBoolean(PROP_FONT_OVERRIDE, false);
+
     private static final String DEFAULT_FONT_ROOT = "google-sans-flex";
 
     private static final String[] DEFAULT_FONT_FALLBACKS = {
@@ -132,6 +137,11 @@ public class FontController {
         return get().getOverrideTypefaceInternal(fontToOverride);
     }
 
+    /** Whether a user-selected font is active; false means stock font behavior. */
+    public static boolean isActive() {
+        return get().mActive;
+    }
+
     public static String getCurrentFontFamily() {
         return get().getCurrentFont();
     }
@@ -154,7 +164,7 @@ public class FontController {
     }
 
     private Typeface getOverrideTypefaceInternal(String fontToOverride) {
-        if (fontToOverride == null) return null;
+        if (!mActive || fontToOverride == null) return null;
 
         String pkgName = getCurrentPackageName();
 
@@ -226,6 +236,8 @@ public class FontController {
 
     private void handleOnConfiguration(Resources res) {
         sResources = res;
+        mActive = SystemProperties.getBoolean(PROP_FONT_OVERRIDE, false);
+        if (!mActive) return;
         String pkgName = getCurrentPackageName();
         if (pkgName == null || EXCLUDED_APPS.contains(pkgName)) return;
         logger("handleOnConfiguration: Changing default font to: " + Typeface.getFontName());

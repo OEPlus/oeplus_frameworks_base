@@ -7480,7 +7480,7 @@ public final class ActivityThread extends ClientTransactionHandler
             final Resources res = context.getResources();
             headlineFamily = res.getString(com.android.internal.R.string.config_headlineFontFamily);
             bodyFamily = res.getString(com.android.internal.R.string.config_bodyFontFamily);
-            if (FontController.isDefaultFont(bodyFamily)) {
+            if (!FontController.isActive() || FontController.isDefaultFont(bodyFamily)) {
                 // Keep variable-* as defined so opsz/ROND from fonts_customization.xml survive.
                 headlineFamily = null;
                 bodyFamily = null;
