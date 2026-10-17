@@ -109,6 +109,7 @@ import com.android.systemui.qs.tileimpl.QSTileImpl
 import com.android.systemui.qs.ui.composable.QuickSettingsShade
 import com.android.systemui.qs.ui.compose.borderOnFocus
 import com.android.systemui.res.R
+import com.android.systemui.shared.system.BlurUtils
 import kotlinx.coroutines.CoroutineScope
 import platform.test.motion.compose.values.MotionTestValueKey
 import platform.test.motion.compose.values.motionTestValues
@@ -178,7 +179,13 @@ fun ContentScope.Tile(
             }
 
         // TODO(b/361789146): Draw the shapes instead of clipping
-        val tileShape by TileDefaults.animateTileShapeAsState(uiState)
+        val tileShape by
+            if (iconOnly && BlurUtils.isOEPlusGlassEnabled()) {
+                // OEPlus glass theme: icon tiles are round buttons, like iOS Control Center.
+                remember { mutableStateOf(RoundedCornerShape(percent = 50)) }
+            } else {
+                TileDefaults.animateTileShapeAsState(uiState)
+            }
         val animatedColor by animateColorAsState(colors.background, label = "QSTileBackgroundColor")
         val isDualTarget = uiState.handlesToggleClick
         val interactionSource = remember { MutableInteractionSource() }
