@@ -26,8 +26,10 @@ import android.graphics.fonts.FontFamily;
 import android.graphics.fonts.FontManager;
 import android.graphics.fonts.FontUpdateRequest;
 import android.graphics.fonts.SystemFonts;
+import android.os.Binder;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.os.Process;
 import android.os.ResultReceiver;
 import android.os.SharedMemory;
 import android.os.ShellCallback;
@@ -90,6 +92,10 @@ public final class FontManagerService extends IFontManager.Stub {
             Objects.requireNonNull(requests);
             getContext().enforceCallingPermission(Manifest.permission.UPDATE_FONTS,
                     "UPDATE_FONTS permission required.");
+            if (hasUnsignedFontFromNonSystemCaller(requests)) {
+                Slog.w(TAG, "Unsigned font files are only accepted from the system uid");
+                return FontManager.RESULT_ERROR_VERIFICATION_FAILURE;
+            }
             try {
                 update(baseVersion, requests);
                 return FontManager.RESULT_SUCCESS;
@@ -109,6 +115,10 @@ public final class FontManagerService extends IFontManager.Stub {
             Objects.requireNonNull(fallbackRequests);
             getContext().enforceCallingPermission(Manifest.permission.UPDATE_FONTS,
                     "UPDATE_FONTS permission required.");
+            if (hasUnsignedFontFromNonSystemCaller(fallbackRequests)) {
+                Slog.w(TAG, "Unsigned font files are only accepted from the system uid");
+                return FontManager.RESULT_ERROR_VERIFICATION_FAILURE;
+            }
             try {
                 updateFallbacks(fallbackRequests);
                 return FontManager.RESULT_SUCCESS;
@@ -119,6 +129,22 @@ public final class FontManagerService extends IFontManager.Stub {
         } finally {
             closeFileDescriptors(fallbackRequests);
         }
+    }
+
+    /**
+     * Unsigned custom fonts skip fs-verity verification, so only accept them from the system
+     * uid (the Settings font picker). Every other caller must still send signed fonts.
+     */
+    private static boolean hasUnsignedFontFromNonSystemCaller(
+            @NonNull List<FontUpdateRequest> requests) {
+        if (Binder.getCallingUid() == Process.SYSTEM_UID) return false;
+        for (FontUpdateRequest request : requests) {
+            if (request != null && request.getType() == FontUpdateRequest.TYPE_UPDATE_FONT_FILE) {
+                final byte[] signature = request.getSignature();
+                if (signature == null || signature.length == 0) return true;
+            }
+        }
+        return false;
     }
 
     private static void closeFileDescriptors(@Nullable List<FontUpdateRequest> requests) {
