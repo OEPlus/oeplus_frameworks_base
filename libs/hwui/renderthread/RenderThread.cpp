@@ -272,6 +272,13 @@ void RenderThread::requireVkContext() {
 void RenderThread::initGrContextOptions(GrContextOptions& options) {
     options.fPreferExternalImagesOverES3 = true;
     options.fDisableDistanceFieldPaths = true;
+    // Skia disables MSAA on Imagination GPUs unless asked, which also disables
+    // the GPU atlas path renderer: complex paths are then triangulated on the
+    // CPU, on the RenderThread. Opt in to Skia's MSAA support for Imagination,
+    // which carries the driver workarounds it needs. Set the property to false
+    // and restart an app to compare.
+    options.fAllowMSAAOnImagination =
+            android::base::GetBoolProperty("debug.oeplus.skia_img_msaa", true);
     if (android::base::GetBoolProperty(PROPERTY_REDUCE_OPS_TASK_SPLITTING, true)) {
         options.fReduceOpsTaskSplitting = GrContextOptions::Enable::kYes;
     } else {
